@@ -1,0 +1,47 @@
+---
+title: Relay Queue Overview
+description: In-memory job queue for Node.js with concurrency control and retries.
+keywords:
+  - relay-queue
+  - queue
+  - jobs
+  - retry
+  - concurrency
+---
+
+Relay Queue is an in-memory job queue for Node.js. Jobs are async functions;
+the queue runs up to `concurrency` jobs at once and retries failed jobs before
+reporting failure.
+
+## Install
+
+```bash
+npm install relay-queue
+```
+
+## Quickstart
+
+```js
+import { createQueue } from "relay-queue";
+
+const queue = createQueue({
+  concurrency: 2,
+  retries: 3,
+  onError: (err, jobId) => console.error(`job ${jobId} failed`, err),
+});
+
+queue.add(() => sendEmail("welcome", user));
+queue.add(() => syncInvoice(invoiceId));
+
+await queue.onIdle(); // resolves when everything is done
+```
+
+## Concepts
+
+- **Concurrency** — at most `concurrency` jobs run at once; the rest wait in
+  FIFO order.
+- **Retries** — a failing job is retried up to `retries` times before
+  `onError` is called with the error and job id.
+- **Draining** — `onIdle()` resolves once no jobs are running or waiting.
+
+See the [API reference](/relay-queue/api) for the full surface.

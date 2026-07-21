@@ -161,9 +161,9 @@ const brandPresets: Record<BrandPresetKey, BrandConfig> = {
 const brandPreset: BrandPresetKey = 'primary'
 
 export const siteConfig: SiteConfig = {
-  name: 'Track Demo Docs',
+  name: 'Track Demo',
   description:
-    'Documentation for Track Demo Docs.',
+    'Documentation hub for Pulsekit, Quill Log, and Relay Queue.',
   repoUrl: '',
   links: [
     { label: 'Get started', href: '/quickstart' },

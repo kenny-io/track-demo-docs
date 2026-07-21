@@ -9,10 +9,6 @@
       {
         "code": "en",
         "label": "English"
-      },
-      {
-        "code": "es",
-        "label": "Español"
       }
     ]
   },
@@ -40,6 +36,35 @@
           "icon": "wrench",
           "pages": [
             "customization"
+          ]
+        }
+      ]
+    },
+    {
+      "tab": "Projects",
+      "groups": [
+        {
+          "group": "Pulsekit",
+          "icon": "heart-pulse",
+          "pages": [
+            "pulsekit/overview",
+            "pulsekit/api"
+          ]
+        },
+        {
+          "group": "Quill Log",
+          "icon": "pen-nib",
+          "pages": [
+            "quill-log/overview",
+            "quill-log/api"
+          ]
+        },
+        {
+          "group": "Relay Queue",
+          "icon": "list-check",
+          "pages": [
+            "relay-queue/overview",
+            "relay-queue/api"
           ]
         }
       ]

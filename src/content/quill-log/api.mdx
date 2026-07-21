@@ -1,0 +1,38 @@
+---
+title: Quill Log API
+description: API reference for quill-log — createLogger, level methods, child loggers, and formatters.
+keywords:
+  - quill-log
+  - api
+  - createLogger
+  - reference
+---
+
+## `createLogger(options?)`
+
+Create a logger.
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `level` | `"debug" \| "info" \| "warn" \| "error"` | `"info"` | Minimum level to emit. |
+| `formatter` | `(record) => void` | `jsonFormatter` | Record sink. |
+| `base` | `object` | `{}` | Fields merged into every record. |
+
+## `log.debug/info/warn/error(msg, fields?)`
+
+Emit a record at the given level. Records below the configured minimum level
+are dropped silently.
+
+## `log.child(fields)`
+
+Derive a logger whose records include extra base fields on top of the
+parent's.
+
+```js
+const reqLog = log.child({ requestId: "req_456" });
+```
+
+## `jsonFormatter(record)`
+
+The default formatter: JSON lines on stdout. Write your own function with the
+same signature to send records to a file, a socket, or an aggregator.

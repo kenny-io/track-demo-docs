@@ -1,0 +1,45 @@
+---
+title: Pulsekit Overview
+description: Tiny heartbeat and uptime monitoring toolkit for Node.js services.
+keywords:
+  - pulsekit
+  - uptime
+  - heartbeat
+  - monitoring
+  - healthcheck
+---
+
+Pulsekit is a tiny heartbeat and uptime monitoring toolkit for Node.js
+services. Each service reports heartbeats to a shared monitor; a service that
+misses its interval is considered down.
+
+## Install
+
+```bash
+npm install pulsekit
+```
+
+## Quickstart
+
+```js
+import { createMonitor } from "pulsekit";
+
+const monitor = createMonitor({ intervalMs: 30_000 });
+
+// Somewhere in each service's loop:
+monitor.beat("payments-api");
+
+// Later:
+monitor.status("payments-api"); // "up" | "down" | "unknown"
+monitor.services(); // [{ name: "payments-api", status: "up" }]
+```
+
+## How it works
+
+- A **monitor** tracks named services in memory.
+- Calling `beat(name)` registers the service on first call and refreshes its
+  last-seen timestamp on every call.
+- A service whose last heartbeat is older than `intervalMs` reports as
+  `"down"`; unregistered services report `"unknown"`.
+
+See the [API reference](/pulsekit/api) for the full surface.

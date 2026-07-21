@@ -1,0 +1,35 @@
+---
+title: Relay Queue API
+description: API reference for relay-queue — createQueue, add, size, and onIdle.
+keywords:
+  - relay-queue
+  - api
+  - createQueue
+  - reference
+---
+
+## `createQueue(options?)`
+
+Create a new queue.
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `concurrency` | `number` | `1` | Max jobs running at once. |
+| `retries` | `number` | `0` | Retry attempts per job after the first failure. |
+| `onError` | `(err, jobId) => void` | no-op | Called when a job exhausts its retries. |
+
+## `queue.add(fn)`
+
+Add a job to the queue.
+
+- `fn` (`() => Promise<any>`) — async job function.
+- Returns a numeric job id, usable for correlating `onError` reports.
+
+## `queue.size()`
+
+Number of jobs waiting to run (running jobs are not counted).
+
+## `queue.onIdle()`
+
+Returns a promise that resolves when the queue is fully drained — no running
+jobs and an empty backlog.

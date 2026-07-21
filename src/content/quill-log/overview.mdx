@@ -1,0 +1,44 @@
+---
+title: Quill Log Overview
+description: Structured, leveled logging for Node.js with pluggable formatters.
+keywords:
+  - quill-log
+  - logging
+  - structured logging
+  - logger
+---
+
+Quill Log is a structured, leveled logging library for Node.js. Loggers emit
+structured records (`{ level, msg, time, ...fields }`) to a formatter; the
+default formatter prints JSON lines to stdout.
+
+## Install
+
+```bash
+npm install quill-log
+```
+
+## Quickstart
+
+```js
+import { createLogger } from "quill-log";
+
+const log = createLogger({ level: "info", base: { service: "checkout" } });
+
+log.info("order placed", { orderId: "ord_123" });
+// {"level":"info","msg":"order placed","time":"…","service":"checkout","orderId":"ord_123"}
+
+const reqLog = log.child({ requestId: "req_456" });
+reqLog.warn("slow upstream", { ms: 1840 });
+```
+
+## Concepts
+
+- **Levels** — `debug < info < warn < error`; records below the configured
+  level are dropped.
+- **Base fields** — merged into every record, ideal for service names and
+  request ids.
+- **Formatters** — a formatter is just a function that receives the record;
+  swap in your own to ship logs anywhere.
+
+See the [API reference](/quill-log/api) for the full surface.
