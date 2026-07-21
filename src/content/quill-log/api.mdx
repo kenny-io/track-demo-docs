@@ -1,11 +1,19 @@
 ---
 title: Quill Log API
-description: API reference for quill-log — createLogger, level methods, child loggers, and formatters.
+description: >-
+  API reference for quill-log — createLogger, level methods, child loggers, and
+  formatters.
 keywords:
   - quill-log
   - api
   - createLogger
   - reference
+---
+# Quill Log API
+*quill-log/api*
+
+> API reference for quill-log — createLogger, level methods, child loggers, and formatters.
+
 ---
 
 ## `createLogger(options?)`
@@ -30,6 +38,22 @@ parent's.
 
 ```js
 const reqLog = log.child({ requestId: "req_456" });
+```
+
+## `log.setLevel(level)`
+
+Change the minimum level at runtime without recreating the logger. Throws `RangeError` on unknown levels.
+
+```js
+log.setLevel("debug"); // flip to debug during investigation
+```
+
+## `log.level()`
+
+Get the current minimum level.
+
+```js
+console.log(log.level()); // "info"
 ```
 
 ## `jsonFormatter(record)`
