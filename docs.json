@@ -1,0 +1,58 @@
+{
+  "theme": "default",
+  "ai": {
+    "chat": true
+  },
+  "i18n": {
+    "defaultLocale": "en",
+    "locales": [
+      {
+        "code": "en",
+        "label": "English"
+      },
+      {
+        "code": "es",
+        "label": "Español"
+      }
+    ]
+  },
+  "tabs": [
+    {
+      "tab": "Overview",
+      "groups": [
+        {
+          "group": "Getting Started",
+          "icon": "book-open",
+          "pages": [
+            "introduction",
+            "quickstart"
+          ]
+        },
+        {
+          "group": "Explore",
+          "icon": "grid-round",
+          "pages": [
+            "components"
+          ]
+        },
+        {
+          "group": "Project",
+          "icon": "wrench",
+          "pages": [
+            "customization"
+          ]
+        }
+      ]
+    },
+    {
+      "tab": "API Reference",
+      "api": {
+        "source": "openapi.yaml"
+      }
+    },
+    {
+      "tab": "Changelog",
+      "href": "/changelog"
+    }
+  ]
+}
