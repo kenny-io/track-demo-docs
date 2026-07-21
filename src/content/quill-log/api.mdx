@@ -10,11 +10,8 @@ keywords:
   - reference
 ---
 # Quill Log API
-*quill-log/api*
 
-> API reference for quill-log — createLogger, level methods, child loggers, and formatters.
-
----
+Create and configure structured, leveled loggers for Node.js.
 
 ## `createLogger(options?)`
 
@@ -54,6 +51,16 @@ Get the current minimum level.
 
 ```js
 console.log(log.level()); // "info"
+```
+
+## `log.isLevelEnabled(level)`
+
+Check whether a record at the given level would be emitted. Use this to skip building expensive log fields that would be dropped by the level filter anyway.
+
+```js
+if (log.isLevelEnabled("debug")) {
+  log.debug("expensive operation", { expensiveField: calculateExpensiveValue() });
+}
 ```
 
 ## `jsonFormatter(record)`
