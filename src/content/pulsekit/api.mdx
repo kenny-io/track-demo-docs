@@ -1,11 +1,17 @@
 ---
 title: Pulsekit API
-description: API reference for pulsekit — createMonitor, beat, status, and services.
+description: 'API reference for pulsekit — createMonitor, beat, status, services, and isUp.'
 keywords:
   - pulsekit
   - api
   - createMonitor
   - reference
+---
+# Pulsekit API
+*pulsekit/api*
+
+> API reference for pulsekit — createMonitor, beat, status, services, and isUp.
+
 ---
 
 ## `createMonitor(options?)`
@@ -29,6 +35,12 @@ Record a heartbeat for a service. Registers the service on the first call.
 Get the status of a single service.
 
 Returns `"up"`, `"down"`, or `"unknown"` for services that have never beaten.
+
+## `monitor.isUp(name)`
+
+Convenience boolean that is `true` only when the service status is `"up"`.
+
+- `name` (`string`) — unique service name.
 
 ## `monitor.services()`
 
