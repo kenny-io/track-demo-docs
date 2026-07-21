@@ -1,6 +1,8 @@
 ---
 title: Relay Queue API
-description: 'API reference for relay-queue — createQueue, add, size, running, and onIdle.'
+description: >-
+  API reference for relay-queue — createQueue, add, addAll, size, running, and
+  onIdle.
 keywords:
   - relay-queue
   - api
@@ -8,9 +10,8 @@ keywords:
   - reference
 ---
 # Relay Queue API
-*relay-queue/api*
 
-> API reference for relay-queue — createQueue, add, size, running, and onIdle.
+> API reference for relay-queue — createQueue, add, addAll, size, running, and onIdle.
 
 ---
 
@@ -30,6 +31,13 @@ Add a job to the queue.
 
 - `fn` (`() => Promise<any>`) — async job function.
 - Returns a numeric job id, usable for correlating `onError` reports.
+
+## `queue.addAll(fns)`
+
+Add several jobs to the queue at once.
+
+- `fns` (`Array<() => Promise<any>>`) — array of async job functions.
+- Returns an array of numeric job ids in input order, usable for correlating `onError` reports.
 
 ## `queue.size()`
 
