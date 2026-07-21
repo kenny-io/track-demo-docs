@@ -10,7 +10,7 @@ keywords:
 # Pulsekit API
 *pulsekit/api*
 
-> API reference for pulsekit — createMonitor, beat, status, services, and isUp.
+> API reference for pulsekit — createMonitor, beat, beatMany, status, services, and isUp.
 
 ---
 
@@ -29,6 +29,12 @@ Returns a monitor object with the methods below.
 Record a heartbeat for a service. Registers the service on the first call.
 
 - `name` (`string`) — unique service name.
+
+## `monitor.beatMany(names)`
+
+Record heartbeats for several services in one call. Useful for gateway processes that proxy health for a fleet.
+
+- `names` (`Array<string>`) — array of unique service names.
 
 ## `monitor.status(name)`
 
