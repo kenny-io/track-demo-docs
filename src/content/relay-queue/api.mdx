@@ -1,11 +1,17 @@
 ---
 title: Relay Queue API
-description: API reference for relay-queue — createQueue, add, size, and onIdle.
+description: 'API reference for relay-queue — createQueue, add, size, running, and onIdle.'
 keywords:
   - relay-queue
   - api
   - createQueue
   - reference
+---
+# Relay Queue API
+*relay-queue/api*
+
+> API reference for relay-queue — createQueue, add, size, running, and onIdle.
+
 ---
 
 ## `createQueue(options?)`
@@ -28,6 +34,10 @@ Add a job to the queue.
 ## `queue.size()`
 
 Number of jobs waiting to run (running jobs are not counted).
+
+## `queue.running()`
+
+Number of jobs currently in flight (running concurrently).
 
 ## `queue.onIdle()`
 
