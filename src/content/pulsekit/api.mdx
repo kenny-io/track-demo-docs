@@ -1,6 +1,8 @@
 ---
 title: Pulsekit API
-description: 'API reference for pulsekit — createMonitor, beat, status, services, and isUp.'
+description: >-
+  API reference for pulsekit — createMonitor, beat, status, watch, snapshots,
+  and more.
 keywords:
   - pulsekit
   - api
@@ -8,9 +10,8 @@ keywords:
   - reference
 ---
 # Pulsekit API
-*pulsekit/api*
 
-> API reference for pulsekit — createMonitor, beat, beatMany, status, services, and isUp.
+> API reference for pulsekit — createMonitor, beat, status, watch, snapshots, and more.
 
 ---
 
@@ -20,35 +21,50 @@ Create a new monitor.
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `intervalMs` | `number` | `30000` | Max milliseconds between heartbeats before a service is marked down. |
+| `intervalMs` | `number` | `30000` | Default max milliseconds between heartbeats before a service is marked down. Can be overridden per-service. |
+| `watchIntervalMs` | `number` | — | When set, automatically sweep for down transitions on this cadence and notify watchers. The timer is unref'd and never keeps the process alive. |
+| `now` | `() => number` | `Date.now` | Clock override, useful in tests for deterministic time control. |
 
 Returns a monitor object with the methods below.
 
-## `monitor.beat(name)`
+## Heartbeats
+
+### `monitor.beat(name, options?)`
 
 Record a heartbeat for a service. Registers the service on the first call.
 
 - `name` (`string`) — unique service name.
+- `options.intervalMs` (`number`, optional) — per-service interval override. When set, this service uses its own cadence instead of the default.
 
-## `monitor.beatMany(names)`
+### `monitor.beatMany(names)`
 
 Record heartbeats for several services in one call. Useful for gateway processes that proxy health for a fleet.
 
 - `names` (`Array<string>`) — array of unique service names.
 
-## `monitor.status(name)`
+## Reading status
+
+### `monitor.status(name)`
 
 Get the status of a single service.
 
 Returns `"up"`, `"down"`, or `"unknown"` for services that have never beaten.
 
-## `monitor.isUp(name)`
+### `monitor.isUp(name)`
 
 Convenience boolean that is `true` only when the service status is `"up"`.
 
 - `name` (`string`) — unique service name.
 
-## `monitor.services()`
+### `monitor.lastSeen(name)`
+
+Get milliseconds since a service's last heartbeat.
+
+- `name` (`string`) — unique service name.
+
+Returns `null` for unknown services.
+
+### `monitor.services()`
 
 List all known services with their current status.
 
@@ -56,3 +72,94 @@ List all known services with their current status.
 monitor.services();
 // [{ name: "payments-api", status: "up" }, { name: "worker", status: "down" }]
 ```
+
+### `monitor.summary()`
+
+Get aggregate counts across all services.
+
+```js
+monitor.summary();
+// { up: 2, down: 1, total: 3 }
+```
+
+### `monitor.stats(name)`
+
+Get lifetime counters for a single service.
+
+- `name` (`string`) — unique service name.
+
+Returns an object with:
+- `beats` — number of times this service has beaten.
+- `firstBeatAt` — timestamp of the first heartbeat (milliseconds).
+- `lastBeatAt` — timestamp of the most recent heartbeat (milliseconds).
+- `intervalMs` — the effective interval for this service (per-service override or default).
+
+Returns `null` for unknown services.
+
+## Transitions
+
+### `monitor.watch(listener)`
+
+Subscribe to status transition events. Each event has the shape `{ name, from, to, at }`:
+
+- `name` — service name.
+- `from` — previous status: `"unknown"`, `"up"`, or `"down"`.
+- `to` — new status: `"unknown"`, `"up"`, or `"down"`.
+- `at` — timestamp when the transition occurred (milliseconds).
+
+"Up" transitions fire synchronously from `beat()`. "Down" transitions are detected by sweeps.
+
+Returns an unsubscribe function.
+
+```js
+const unsubscribe = monitor.watch(({ name, from, to, at }) => {
+  if (to === "down") page(`${name} stopped beating`);
+});
+
+// Later:
+unsubscribe();
+```
+
+### `monitor.sweep()`
+
+Evaluate all services now and notify watchers of new down transitions.
+
+Returns an array of service names that went down since the last check. This is called automatically when `watchIntervalMs` is configured, but you can also call it manually.
+
+### `monitor.stop()`
+
+Stop the automatic sweep timer (if one was started by `watchIntervalMs`). After calling this, sweeps will only happen on explicit `sweep()` calls.
+
+## Persistence
+
+### `monitor.toJSON()`
+
+Create a serializable snapshot of the monitor state. Works directly with `JSON.stringify()`.
+
+```js
+const snapshot = monitor.toJSON();
+const saved = JSON.stringify(snapshot);
+```
+
+### `monitor.restore(snapshot)`
+
+Load services from a `toJSON()` snapshot, merging over current state. Lets heartbeat history survive process restarts.
+
+- `snapshot` (`object`) — a snapshot from `toJSON()`.
+
+```js
+const saved = localStorage.getItem("monitor-state");
+if (saved) monitor.restore(JSON.parse(saved));
+```
+
+Throws `TypeError` if the snapshot shape is unrecognized.
+
+## Housekeeping
+
+### `monitor.forget(name)`
+
+Stop tracking a service. Its status becomes `"unknown"` afterward.
+
+- `name` (`string`) — unique service name.
+
+Returns `true` if the service was being tracked, `false` otherwise.

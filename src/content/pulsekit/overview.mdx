@@ -1,6 +1,8 @@
 ---
 title: Pulsekit Overview
-description: Tiny heartbeat and uptime monitoring toolkit for Node.js services.
+description: >-
+  Tiny heartbeat and uptime monitoring toolkit for Node.js services with
+  transition watchers and per-service intervals.
 keywords:
   - pulsekit
   - uptime
@@ -8,10 +10,13 @@ keywords:
   - monitoring
   - healthcheck
 ---
+# Pulsekit Overview
 
-Pulsekit is a tiny heartbeat and uptime monitoring toolkit for Node.js
-services. Each service reports heartbeats to a shared monitor; a service that
-misses its interval is considered down.
+> Tiny heartbeat and uptime monitoring toolkit for Node.js services. Zero dependencies, lazy evaluation, and an opt-in watcher for push-style alerts.
+
+---
+
+Pulsekit is a tiny heartbeat and uptime monitoring toolkit for Node.js services. Each service reports heartbeats to a shared monitor; a service that misses its interval is considered down.
 
 ## Install
 
@@ -24,14 +29,19 @@ npm install pulsekit
 ```js
 import { createMonitor } from "pulsekit";
 
-const monitor = createMonitor({ intervalMs: 30_000 });
+const monitor = createMonitor({ intervalMs: 30_000, watchIntervalMs: 5_000 });
+
+monitor.watch(({ name, from, to, at }) => {
+  if (to === "down") page(`${name} stopped beating`);
+});
 
 // Somewhere in each service's loop:
 monitor.beat("payments-api");
+monitor.beat("nightly-batch", { intervalMs: 90 * 60_000 }); // its own cadence
 
 // Later:
 monitor.status("payments-api"); // "up" | "down" | "unknown"
-monitor.services(); // [{ name: "payments-api", status: "up" }]
+monitor.summary(); // { up: 2, down: 0, total: 2 }
 ```
 
 ## How it works
@@ -41,5 +51,11 @@ monitor.services(); // [{ name: "payments-api", status: "up" }]
   last-seen timestamp on every call.
 - A service whose last heartbeat is older than `intervalMs` reports as
   `"down"`; unregistered services report `"unknown"`.
+- Status is evaluated **lazily** on read — an idle monitor costs nothing.
+- Set `watchIntervalMs` to opt into automatic transition detection: the monitor
+  sweeps periodically and notifies `watch()` listeners when services go down.
+  The sweep timer is unref'd and never keeps the process alive.
+- Each service can have its own `intervalMs`, so a slow nightly batch can
+  coexist with fast API heartbeats.
 
 See the [API reference](/pulsekit/api) for the full surface.
