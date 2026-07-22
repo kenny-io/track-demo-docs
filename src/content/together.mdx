@@ -1,0 +1,133 @@
+---
+title: Using the libraries together
+description: Recipes for composing pulsekit, quill-log, and relay-queue into one observable, resilient worker.
+keywords:
+  - recipes
+  - integration
+  - worker
+  - graceful shutdown
+  - observability
+---
+
+Each library stands alone, but they were designed to sit next to each other
+in the same process. These recipes show the seams.
+
+## An instrumented queue
+
+Give every job structured logs and a duration, and let the queue's error
+callback do the last-resort reporting:
+
+```js
+import { createLogger } from "quill-log";
+import { createQueue } from "relay-queue";
+
+const log = createLogger({ base: { service: "importer" }, redact: ["token"] });
+
+const queue = createQueue({
+  concurrency: 4,
+  retries: 2,
+  retryDelayMs: 500,
+  onError: (err, jobId) => log.error("job exhausted retries", { err, jobId }),
+});
+
+function importAccount(account) {
+  return async () => {
+    const end = log.time("account imported");
+    await pullRecords(account); // may throw — the queue handles retries
+    end({ accountId: account.id });
+  };
+}
+
+queue.addAll(accounts.map(importAccount));
+```
+
+Because `err` values are serialized by quill-log, a failed job logs a real
+`{ name, message, stack }` — and because `token` is redacted, a misbehaving
+error message can't leak credentials into your log pipeline.
+
+## Liveness for queue workers
+
+A queue that's quietly stuck looks identical to a queue that's idle — unless
+something is watching. Beat once per completed drain, and use `stats()` as
+the payload when things go wrong:
+
+```js
+import { createMonitor } from "pulsekit";
+
+const monitor = createMonitor({ intervalMs: 60_000, watchIntervalMs: 10_000 });
+
+monitor.watch(({ name, to }) => {
+  if (to === "down") {
+    log.warn("worker stalled", { name, queue: queue.stats() });
+  }
+});
+
+async function drain() {
+  await queue.onIdle();
+  monitor.beat("importer");
+}
+```
+
+`queue.stats()` in the alert gives the on-call person the shape of the
+problem immediately: a growing `pending` with zero `completed` reads very
+differently from a burst of `timedOut`.
+
+## Graceful shutdown
+
+Stop taking new work, let running jobs finish, and say so in the logs:
+
+```js
+process.on("SIGTERM", async () => {
+  log.info("shutting down", { pending: queue.size() });
+
+  queue.pause();
+  queue.clear(); // drop waiting jobs; running ones finish
+  await queue.onIdle();
+
+  monitor.stop(); // release the sweep timer
+  log.info("drained", { stats: queue.stats() });
+  process.exit(0);
+});
+```
+
+None of the libraries hold the event loop open — pulsekit's sweep timer and
+relay-queue's retry timers are unref'd — so once your own handles close, the
+process exits cleanly.
+
+## Restart-proof heartbeats
+
+A restarting worker shouldn't page anyone. Persist the monitor across
+restarts so "last seen 40 seconds ago" survives the process boundary:
+
+```js
+import { readFile, writeFile } from "node:fs/promises";
+
+const monitor = createMonitor({ intervalMs: 60_000 });
+
+try {
+  monitor.restore(JSON.parse(await readFile("monitor.json", "utf8")));
+} catch {
+  // First boot — nothing to restore.
+}
+
+process.on("beforeExit", async () => {
+  await writeFile("monitor.json", JSON.stringify(monitor));
+});
+```
+
+## One record stream, two destinations
+
+Ship JSON lines to stdout for your aggregator and mirror warnings into an
+audit sink with `tee`:
+
+```js
+import { createLogger, jsonFormatter, tee } from "quill-log";
+
+const audit = (record) => {
+  if (record.level === "warn" || record.level === "error") {
+    auditStream.write(JSON.stringify(record) + "\n");
+  }
+};
+
+const log = createLogger({ formatter: tee(jsonFormatter, audit) });
+```

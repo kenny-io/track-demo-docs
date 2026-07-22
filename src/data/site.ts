@@ -161,9 +161,9 @@ const brandPresets: Record<BrandPresetKey, BrandConfig> = {
 const brandPreset: BrandPresetKey = 'primary'
 
 export const siteConfig: SiteConfig = {
-  name: 'Track Demo',
+  name: 'Relay Toolkit',
   description:
-    'Documentation hub for Pulsekit, Quill Log, and Relay Queue.',
+    'Three zero-dependency Node.js libraries for monitoring, logging, and background work — documented by Thally Track.',
   repoUrl: '',
   links: [
     { label: 'Get started', href: '/quickstart' },

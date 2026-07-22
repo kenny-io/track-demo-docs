@@ -1,45 +1,108 @@
 ---
 title: Quickstart
-description: Give readers the fastest path to a successful first result with Track Demo Docs.
+description: Build a monitored, logged, retrying worker in five minutes with pulsekit, quill-log, and relay-queue.
 keywords:
-  - Track Demo Docs
   - quickstart
   - installation
   - getting started
+  - node.js worker
 ---
 
-Describe the prerequisites and the shortest useful workflow. A good quickstart
-takes someone from zero to a visible result without explaining every option.
+In five minutes you'll have a small worker process that queues jobs with
+retries, logs everything it does without leaking secrets, and reports a
+heartbeat you can alert on. That's the whole toolkit in one file.
 
 ## Prerequisites
 
-- Requirement one, such as an account, API key, or supported runtime
-- Requirement two, such as a compatible device, browser, or operating system
+- Node.js 18 or newer
+- A project with `"type": "module"` in its `package.json` (all three
+  libraries are ES modules)
 
 <Steps>
-  <Step title="Install">
-    Explain how to install Track Demo Docs or create an account.
+  <Step title="Install the libraries">
+    Install whichever you need — they have no dependencies and no opinions
+    about each other:
 
     ```bash
-    npm install your-package
+    npm install pulsekit quill-log relay-queue
     ```
   </Step>
-  <Step title="Configure">
-    Show only the configuration required for the first successful run.
+  <Step title="Create a logger">
+    Structured JSON lines, with anything sensitive masked before it can reach
+    a sink:
 
-    ```bash
-    your-cli init
+    ```js
+    import { createLogger } from "quill-log";
+
+    const log = createLogger({
+      base: { service: "email-worker" },
+      redact: ["password", "token", "apiKey"],
+    });
     ```
   </Step>
-  <Step title="Run it">
-    Give readers a command or action with an observable result.
+  <Step title="Create a queue">
+    Two jobs at a time, three retries with exponential backoff, ten-second
+    attempts:
 
-    ```bash
-    your-cli start
+    ```js
+    import { createQueue } from "relay-queue";
+
+    const queue = createQueue({
+      concurrency: 2,
+      retries: 3,
+      retryDelayMs: 250,
+      timeoutMs: 10_000,
+      onError: (err, jobId) => log.error("job failed for good", { err, jobId }),
+    });
+    ```
+  </Step>
+  <Step title="Add a heartbeat">
+    Beat every time the worker completes a loop; alert when it stops:
+
+    ```js
+    import { createMonitor } from "pulsekit";
+
+    const monitor = createMonitor({ intervalMs: 30_000, watchIntervalMs: 5_000 });
+    monitor.watch(({ name, to }) => {
+      if (to === "down") log.warn("service stopped beating", { name });
+    });
+    ```
+  </Step>
+  <Step title="Put it together">
+    ```js
+    async function processEmails() {
+      const end = log.time("email batch");
+      const batch = await fetchPendingEmails();
+
+      queue.addAll(batch.map((email) => () => sendEmail(email)));
+      await queue.onIdle();
+
+      end({ sent: queue.stats().completed });
+      monitor.beat("email-worker");
+    }
+
+    setInterval(processEmails, 15_000);
+    ```
+
+    Run it and watch the records flow:
+
+    ```json
+    {"level":"info","msg":"email batch","time":"2026-07-23T09:14:02.113Z","service":"email-worker","durationMs":1873,"sent":42}
     ```
   </Step>
 </Steps>
 
-<Tip>
-  Tell readers where to get help, then link to the next guide they should read.
-</Tip>
+## Where to go next
+
+<CardGroup cols={3}>
+  <Card title="Recipes" icon="grid-round" href="/together">
+    Instrumented queues, graceful shutdown, and redaction-safe error
+    handling.
+  </Card>
+  <Card title="API references" icon="code-simple" href="/pulsekit/api">
+    Every method, option, and default across the three libraries.
+  </Card>
+  <Card title="Changelog" icon="party-horn" href="/changelog">
+    What shipped, release by release.
+  </Card>
+</CardGroup>

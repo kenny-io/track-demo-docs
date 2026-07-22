@@ -1,16 +1,19 @@
 ---
 title: Quill Log Overview
-description: Structured, leveled logging for Node.js with pluggable formatters.
+description: Structured, leveled logging for Node.js with secret redaction, error serialization, timers, and pluggable sinks.
 keywords:
   - quill-log
   - logging
   - structured logging
+  - redaction
   - logger
 ---
 
 Quill Log is a structured, leveled logging library for Node.js. Loggers emit
 structured records (`{ level, msg, time, ...fields }`) to a formatter; the
-default formatter prints JSON lines to stdout.
+default formatter prints JSON lines to stdout. Records are sanitized —
+secrets masked, errors serialized, cycles cut — *before* any formatter runs,
+so sinks only ever see plain, safe data.
 
 ## Install
 
@@ -23,22 +26,43 @@ npm install quill-log
 ```js
 import { createLogger } from "quill-log";
 
-const log = createLogger({ level: "info", base: { service: "checkout" } });
+const log = createLogger({
+  level: "info",
+  base: { service: "checkout" },
+  redact: ["password", "token"],
+});
 
 log.info("order placed", { orderId: "ord_123" });
 // {"level":"info","msg":"order placed","time":"…","service":"checkout","orderId":"ord_123"}
 
-const reqLog = log.child({ requestId: "req_456" });
-reqLog.warn("slow upstream", { ms: 1840 });
+log.error("upstream failed", { err: new Error("timeout"), token: "abc" });
+// err → { name, message, stack }, token → "[redacted]"
+
+const end = log.time("invoice sync");
+await syncInvoices();
+end({ count: 42 }); // logs with durationMs
 ```
 
 ## Concepts
 
 - **Levels** — `debug < info < warn < error`; records below the configured
-  level are dropped.
+  level are dropped. Change at runtime with `setLevel()`, and guard expensive
+  field construction with `isLevelEnabled()`.
 - **Base fields** — merged into every record, ideal for service names and
-  request ids.
-- **Formatters** — a formatter is just a function that receives the record;
-  swap in your own to ship logs anywhere.
+  request ids. `child(fields)` derives a logger with more of them.
+- **Record safety** — the `redact` list masks matching keys at any depth
+  (case-insensitively), `Error` values serialize to `{ name, message,
+  stack }` including `cause` chains, and circular references become
+  `"[circular]"` so every record survives `JSON.stringify`.
+- **Formatters** — a formatter is just a function that receives the record.
+  Use `jsonFormatter` (default), `prettyFormatter` for development, `tee()`
+  to fan out to several sinks, or write your own.
+
+## When to use it
+
+Quill Log fits services that want structured, greppable logs without adopting
+a heavyweight logging framework: it has no transports, no workers, and no
+configuration files — just records in, function out. If you need log
+shipping, sampling, or rotation, put those in your sink.
 
 See the [API reference](/quill-log/api) for the full surface.

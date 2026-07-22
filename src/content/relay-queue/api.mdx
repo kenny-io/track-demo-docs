@@ -1,53 +1,84 @@
 ---
 title: Relay Queue API
-description: >-
-  API reference for relay-queue — createQueue, add, addAll, size, running, and
-  onIdle.
+description: API reference for relay-queue — createQueue, priorities, timeouts, backoff, stats, and queue control.
 keywords:
   - relay-queue
   - api
   - createQueue
+  - priority
+  - timeout
   - reference
 ---
-# Relay Queue API
 
-> API reference for relay-queue — createQueue, add, addAll, size, running, and onIdle.
+Create and control in-memory job queues.
 
----
+## Creating a queue
 
-## `createQueue(options?)`
-
-Create a new queue.
+### `createQueue(options?)`
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `concurrency` | `number` | `1` | Max jobs running at once. |
 | `retries` | `number` | `0` | Retry attempts per job after the first failure. |
-| `onError` | `(err, jobId) => void` | no-op | Called when a job exhausts its retries. |
+| `timeoutMs` | `number` | — | Per-attempt time limit; a timed-out attempt counts as a failure and consumes a retry. |
+| `retryDelayMs` | `number` | `0` | Delay before the first retry. |
+| `backoffFactor` | `number` | `2` | Multiplier applied to the delay on each subsequent retry. |
+| `onError` | `(err, jobId) => void` | no-op | Called when a job exhausts its retries. Timeouts surface as `TimeoutError`. |
 
-## `queue.add(fn)`
+## Adding work
+
+### `queue.add(fn, options?)`
 
 Add a job to the queue.
 
 - `fn` (`() => Promise<any>`) — async job function.
+- `options.priority` (`number`, default `0`) — higher runs first; FIFO
+  within a priority level.
+- `options.timeoutMs` (`number`) — per-attempt limit for this job,
+  overriding the queue default.
 - Returns a numeric job id, usable for correlating `onError` reports.
 
-## `queue.addAll(fns)`
+### `queue.addAll(fns)`
 
-Add several jobs to the queue at once.
+Enqueue several jobs at once; returns their ids in input order.
 
-- `fns` (`Array<() => Promise<any>>`) — array of async job functions.
-- Returns an array of numeric job ids in input order, usable for correlating `onError` reports.
+## Observing
 
-## `queue.size()`
+### `queue.size()`
 
 Number of jobs waiting to run (running jobs are not counted).
 
-## `queue.running()`
+### `queue.running()`
 
-Number of jobs currently in flight (running concurrently).
+Number of jobs currently in flight. A job waiting on a retry delay still
+counts as running.
 
-## `queue.onIdle()`
+### `queue.stats()`
+
+Lifetime counters plus current state:
+
+```js
+queue.stats();
+// { added: 12, completed: 9, failed: 1, retried: 4, timedOut: 2,
+//   running: 1, pending: 1 }
+```
+
+### `queue.onIdle()`
 
 Returns a promise that resolves when the queue is fully drained — no running
-jobs and an empty backlog.
+jobs, no waiting jobs, and no pending retry delays.
+
+## Controlling
+
+### `queue.pause()` / `queue.resume()`
+
+Stop and restart job starts; running jobs always finish.
+
+### `queue.isPaused()`
+
+Whether the queue is currently paused.
+
+### `queue.clear()`
+
+Drop all waiting jobs without running them; returns the number dropped.
+Running jobs finish normally.

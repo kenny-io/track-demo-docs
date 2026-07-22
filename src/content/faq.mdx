@@ -1,0 +1,67 @@
+---
+title: FAQ
+description: Runtime support, dependencies, TypeScript, production readiness, and how this documentation stays current.
+keywords:
+  - faq
+  - typescript
+  - esm
+  - production
+  - support
+---
+
+## Which Node.js versions are supported?
+
+Node.js 18 and newer. All three libraries use only standard runtime APIs —
+`Map`, `Promise`, timers, and `node:test` for their own suites — so they
+track Node's LTS policy rather than any dependency's.
+
+## Do the libraries depend on each other?
+
+No. Each package has **zero dependencies**, including on its siblings. The
+[recipes](/together) show how they compose, but you can adopt exactly one
+without pulling in anything else.
+
+## Are they ESM or CommonJS?
+
+ES modules only (`"type": "module"`). If you're on CommonJS, use dynamic
+import:
+
+```js
+const { createQueue } = await import("relay-queue");
+```
+
+## Is there TypeScript support?
+
+The source ships rich JSDoc on every exported function, which gives editors
+full IntelliSense and lets `tsc` type-check consumers with `checkJs`.
+Dedicated `.d.ts` files are on the roadmap — see the
+[changelog](/changelog) for progress.
+
+## Can I use these in production?
+
+They're small, tested, and dependency-free by design, which makes them easy
+to audit for your own risk profile. The honest boundaries:
+
+- **Pulsekit** and **Relay Queue** are in-memory and per-process. They are
+  not a replacement for external uptime probes or a durable queue (Redis,
+  SQS) when jobs must survive a crash.
+- **Quill Log** writes to whatever formatter you give it; delivery
+  guarantees are your sink's business.
+
+Within those boundaries — a worker's internal liveness, log hygiene, and
+bounded background work — that's exactly what they're built for.
+
+## How does the documentation stay up to date?
+
+This site is maintained with [Thally](https://thally.io) and connected to
+the three product repositories with **Thally Track**. When a pull request
+merges in `pulsekit`, `quill-log`, or `relay-queue`, Track reads the diff,
+drafts the matching documentation change, and opens a pull request on this
+site's repository for human review. Merged docs publish automatically.
+
+## Where do I report bugs?
+
+Each library's GitHub repository:
+[pulsekit](https://github.com/kenny-io/pulsekit),
+[quill-log](https://github.com/kenny-io/quill-log),
+[relay-queue](https://github.com/kenny-io/relay-queue).

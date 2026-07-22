@@ -25,17 +25,11 @@
           ]
         },
         {
-          "group": "Explore",
+          "group": "Guides",
           "icon": "grid-round",
           "pages": [
-            "components"
-          ]
-        },
-        {
-          "group": "Project",
-          "icon": "wrench",
-          "pages": [
-            "customization"
+            "together",
+            "faq"
           ]
         }
       ]
@@ -68,12 +62,6 @@
           ]
         }
       ]
-    },
-    {
-      "tab": "API Reference",
-      "api": {
-        "source": "openapi.yaml"
-      }
     },
     {
       "tab": "Changelog",

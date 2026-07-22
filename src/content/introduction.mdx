@@ -1,48 +1,73 @@
 ---
 title: Introduction
-description: Documentation hub for Pulsekit, Quill Log, and Relay Queue.
+description: The Relay toolkit — three zero-dependency Node.js libraries for monitoring, logging, and background work, with documentation that updates itself.
 mode: home
 keywords:
-  - Track Demo Docs
+  - relay toolkit
   - pulsekit
   - quill-log
   - relay-queue
-  - documentation
-  - overview
+  - node.js
+  - monitoring
+  - logging
+  - job queue
 ---
 
 <Hero
-  title="Track Demo Docs"
-  subtitle="One documentation hub for three small Node.js libraries: Pulsekit (uptime monitoring), Quill Log (structured logging), and Relay Queue (job queues)."
-  primaryLabel="Start the quickstart"
+  title="Small tools for services that stay up"
+  subtitle="Pulsekit, Quill Log, and Relay Queue are three zero-dependency Node.js libraries that cover the unglamorous parts of running a service: knowing it's alive, understanding what it did, and getting background work done reliably."
+  primaryLabel="Start in five minutes"
   primaryHref="/quickstart"
-  secondaryLabel="Browse the projects"
-  secondaryHref="/pulsekit/overview"
+  secondaryLabel="Use them together"
+  secondaryHref="/together"
 />
 
 <CardGroup cols={3}>
   <Card title="Pulsekit" icon="heart-pulse" href="/pulsekit/overview">
-    Tiny heartbeat and uptime monitoring toolkit for Node.js services.
+    Heartbeat and uptime monitoring. Beat from anywhere, watch transitions,
+    survive restarts with snapshots.
   </Card>
   <Card title="Quill Log" icon="pen-nib" href="/quill-log/overview">
-    Structured, leveled logging with pluggable formatters.
+    Structured logging with secret redaction, error serialization, timers,
+    and pluggable sinks.
   </Card>
   <Card title="Relay Queue" icon="list-check" href="/relay-queue/overview">
-    In-memory job queue with concurrency control and retries.
-  </Card>
-  <Card title="Quickstart" icon="party-horn" href="/quickstart">
-    The fastest path to a useful first result with any of the libraries.
-  </Card>
-  <Card title="API reference" icon="code-simple" href="/api">
-    Interactive endpoint reference generated from `openapi.yaml`.
-  </Card>
-  <Card title="Agent-ready docs" icon="link-simple" href="/llms.txt">
-    A clean, structured version of this documentation for coding agents.
+    Background jobs with concurrency control, priorities, timeouts, and
+    retries with exponential backoff.
   </Card>
 </CardGroup>
 
-<Note type="info" title="Kept in sync automatically">
-  These docs are connected to the `pulsekit`, `quill-log`, and `relay-queue`
-  repositories with Thally Track. When a change merges in any of them, Track
-  proposes a matching documentation update as a pull request.
+## Why these three
+
+Every long-running Node.js service ends up rebuilding the same plumbing: a
+health signal for the load balancer, logs that don't leak credentials, and a
+queue that retries flaky work without hammering a struggling dependency. Each
+library here does one of those jobs with a deliberately small surface:
+
+- **No dependencies.** Each package is a single ES module you can read in one
+  sitting. Nothing to audit but the code itself.
+- **Lazy by default.** Idle monitors, filtered log levels, and paused queues
+  cost nothing. You opt into timers; none of them will hold your process open.
+- **Test-friendly.** Injectable clocks and formatter sinks mean the test
+  suites never sleep and never spy on stdout.
+
+They compose naturally — [Using the libraries together](/together) walks
+through an instrumented worker that uses all three — but each stands alone.
+
+## Documentation that keeps itself honest
+
+<Note type="info" title="Powered by Thally Track">
+  This site is connected to the `pulsekit`, `quill-log`, and `relay-queue`
+  repositories with Thally Track. When a pull request merges in any of them,
+  Track reads the change, drafts the matching documentation update, and opens
+  a pull request here for review. The API references you're reading were
+  written that way — merged code first, docs following automatically.
 </Note>
+
+## At a glance
+
+| Library | Problem it solves | Weight |
+| --- | --- | --- |
+| [Pulsekit](/pulsekit/overview) | "Is every part of my system still alive?" | ~230 lines, 0 deps |
+| [Quill Log](/quill-log/overview) | "What happened, without leaking secrets?" | ~190 lines, 0 deps |
+| [Relay Queue](/relay-queue/overview) | "Do this work reliably, but not all at once." | ~200 lines, 0 deps |

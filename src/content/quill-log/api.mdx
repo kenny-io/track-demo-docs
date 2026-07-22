@@ -1,19 +1,19 @@
 ---
 title: Quill Log API
-description: >-
-  API reference for quill-log — createLogger, level methods, child loggers, and
-  formatters.
+description: API reference for quill-log — createLogger, redaction, error serialization, timers, and formatters.
 keywords:
   - quill-log
   - api
   - createLogger
+  - redact
   - reference
 ---
-# Quill Log API
 
 Create and configure structured, leveled loggers for Node.js.
 
-## `createLogger(options?)`
+## Loggers
+
+### `createLogger(options?)`
 
 Create a logger.
 
@@ -22,48 +22,86 @@ Create a logger.
 | `level` | `"debug" \| "info" \| "warn" \| "error"` | `"info"` | Minimum level to emit. |
 | `formatter` | `(record) => void` | `jsonFormatter` | Record sink. |
 | `base` | `object` | `{}` | Fields merged into every record. |
+| `redact` | `Array<string>` | `[]` | Field names masked as `"[redacted]"` at any depth, case-insensitively. |
 
-## `log.debug/info/warn/error(msg, fields?)`
+### `log.debug/info/warn/error(msg, fields?)`
 
 Emit a record at the given level. Records below the configured minimum level
-are dropped silently.
+are dropped silently. Before the formatter runs, fields pass through
+sanitization:
 
-## `log.child(fields)`
+- keys in the `redact` list become `"[redacted]"` — at any nesting depth,
+  matched case-insensitively;
+- `Error` values (including `cause` chains) serialize to
+  `{ name, message, stack }`;
+- circular references are replaced with `"[circular]"`, so records always
+  survive `JSON.stringify`.
+
+### `log.child(fields)`
 
 Derive a logger whose records include extra base fields on top of the
-parent's.
+parent's. Level, formatter, and redaction are inherited.
 
 ```js
 const reqLog = log.child({ requestId: "req_456" });
 ```
 
-## `log.setLevel(level)`
+## Levels
 
-Change the minimum level at runtime without recreating the logger. Throws `RangeError` on unknown levels.
-
-```js
-log.setLevel("debug"); // flip to debug during investigation
-```
-
-## `log.level()`
+### `log.level()`
 
 Get the current minimum level.
 
-```js
-console.log(log.level()); // "info"
-```
+### `log.setLevel(level)`
 
-## `log.isLevelEnabled(level)`
+Change the minimum level at runtime without recreating the logger — e.g.
+flip to `"debug"` during an investigation. Throws `RangeError` on unknown
+levels.
 
-Check whether a record at the given level would be emitted. Use this to skip building expensive log fields that would be dropped by the level filter anyway.
+### `log.isLevelEnabled(level)`
+
+Whether a record at the given level would be emitted. Use it to skip
+building expensive log fields that the level filter would drop anyway:
 
 ```js
 if (log.isLevelEnabled("debug")) {
-  log.debug("expensive operation", { expensiveField: calculateExpensiveValue() });
+  log.debug("cache state", { dump: expensiveSnapshot() });
 }
 ```
 
-## `jsonFormatter(record)`
+## Timing
 
-The default formatter: JSON lines on stdout. Write your own function with the
-same signature to send records to a file, a socket, or an aggregator.
+### `log.time(msg)`
+
+Start a duration timer. Returns an `end(fields?)` function that logs `msg`
+at info with a `durationMs` field plus any extra fields:
+
+```js
+const end = log.time("email batch");
+await sendAll();
+end({ sent: 42 }); // {"msg":"email batch","durationMs":1873,"sent":42,…}
+```
+
+## Formatters
+
+A formatter is any `(record) => void` function.
+
+### `jsonFormatter(record)`
+
+The default formatter: JSON lines on stdout.
+
+### `prettyFormatter(record)`
+
+Human-readable single-line output for local development:
+
+```
+12:04:05 WARN  slow upstream ms=1840
+```
+
+### `tee(...formatters)`
+
+Fan each record out to several sinks:
+
+```js
+const log = createLogger({ formatter: tee(jsonFormatter, auditSink) });
+```

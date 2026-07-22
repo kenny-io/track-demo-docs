@@ -1,19 +1,59 @@
 ---
 title: Changelog
-description: Notable changes, releases, and improvements to Track Demo Docs.
+description: Release history for pulsekit, quill-log, and relay-queue.
 keywords:
-  - Track Demo Docs
   - changelog
   - releases
-  - updates
+  - versions
 ---
 
-## v0.1.0
+## July 23, 2026 — the 0.2.0 wave
 
-The first release of your **Track Demo Docs** documentation.
+All three libraries grew from minimal cores into production-shaped tools.
 
-- Initial docs site scaffolded with [Thally](https://github.com/thallylabs/thally)
-- Agent-ready endpoints live: `/llms.txt`, `/ai.txt`, `/api/docs-index`, and `/api/agent-readiness`
-- Starter guides in the Overview tab and an interactive API reference
+### pulsekit 0.2.0
 
-Edit this page at `src/content/changelog.mdx` to announce your own releases as you ship.
+- **Transition watchers** — `watch(listener)` receives `{ name, from, to, at }`
+  events; `watchIntervalMs` runs down-detection sweeps on an unref'd timer.
+- **Per-service intervals** — `beat(name, { intervalMs })`.
+- **`stats(name)`** — lifetime counters per service.
+- **Snapshots** — `toJSON()` / `restore()` carry heartbeat history across
+  restarts.
+- Injectable clock (`now` option) and a `node:test` suite.
+
+### quill-log 0.2.0
+
+- **Redaction** — `redact: ["password"]` masks matching keys at any depth,
+  case-insensitively, before records reach a formatter.
+- **Error serialization** — `Error` values (with `cause` chains) become
+  `{ name, message, stack }`; circular references are cut safely.
+- **`log.time(msg)`** — duration logging with a `durationMs` field.
+- **`tee(...formatters)`** — fan records out to several sinks.
+- `child()` inherits redaction; `node:test` suite.
+
+### relay-queue 0.2.0
+
+- **Priorities** — `add(fn, { priority })`, FIFO within a level.
+- **Timeouts** — per-attempt `timeoutMs` (queue-wide or per job) surfacing as
+  `TimeoutError`.
+- **Retry backoff** — `retryDelayMs` × `backoffFactor`, with retry delays
+  counted as running so `onIdle()` stays honest.
+- **`stats()`** — `{ added, completed, failed, retried, timedOut, running,
+  pending }`.
+- `node:test` suite.
+
+## July 21–22, 2026 — quality-of-life releases
+
+- **pulsekit** gained `forget()`, `summary()`, `lastSeen()`, `isUp()`, and
+  `beatMany()`.
+- **quill-log** gained `prettyFormatter`, `setLevel()`, `level()`, and
+  `isLevelEnabled()`.
+- **relay-queue** gained `pause()` / `resume()` / `isPaused()`, `clear()`,
+  `running()`, and `addAll()`.
+
+## July 21, 2026 — initial releases (0.1.0)
+
+- **pulsekit** — heartbeats, lazy status evaluation, service listing.
+- **quill-log** — leveled structured records, JSON-lines formatter, child
+  loggers.
+- **relay-queue** — bounded concurrency, retries, `onIdle()`.

@@ -10,11 +10,6 @@ keywords:
   - monitoring
   - healthcheck
 ---
-# Pulsekit Overview
-
-> Tiny heartbeat and uptime monitoring toolkit for Node.js services. Zero dependencies, lazy evaluation, and an opt-in watcher for push-style alerts.
-
----
 
 Pulsekit is a tiny heartbeat and uptime monitoring toolkit for Node.js services. Each service reports heartbeats to a shared monitor; a service that misses its interval is considered down.
 
@@ -52,5 +47,13 @@ monitor.summary(); // { up: 2, down: 0, total: 2 }
 - Status is evaluated lazily on read, so an idle monitor costs nothing.
 - **Transition watchers** let you opt into push-style alerts: set `watchIntervalMs` when creating the monitor, then call `watch(listener)` to receive `{ name, from, to, at }` events.
 - Each service can have its own interval via the `beatOptions` parameter.
+
+## When to use it
+
+Pulsekit answers "is every part of my process still alive?" from inside the
+process: cron loops, queue workers, socket consumers. It is in-memory and
+per-process by design — pair it with an external probe for whole-host
+failures, and use `toJSON()`/`restore()` to keep history across planned
+restarts.
 
 See the [API reference](/pulsekit/api) for the full surface.
